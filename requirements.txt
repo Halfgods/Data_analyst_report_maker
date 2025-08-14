@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pandas
+polars
+pyarrow
+matplotlib
+seaborn
+google-generativeai
+python-multipart
+aiofiles
+numpy
+scipy

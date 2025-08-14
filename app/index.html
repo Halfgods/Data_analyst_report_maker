@@ -24,9 +24,6 @@
     <h2>Charts:</h2>
     <div id="chartsContainer"></div>
 
-    <h2>Report:</h2>
-    <div id="reportLink"></div>
-
     <h2>Ask AI about Data:</h2>
     <input type="text" id="aiQuestionInput" placeholder="e.g., What is the average of X?">
     <button onclick="askAI()">Ask AI</button>
@@ -52,7 +49,6 @@
 
             document.getElementById('output').textContent = 'Uploading files...';
             document.getElementById('chartsContainer').innerHTML = '';
-            document.getElementById('reportLink').innerHTML = '';
             document.getElementById('aiAnswer').textContent = '';
 
             try {
@@ -101,16 +97,6 @@ Processing data...`;
                             chartsContainer.appendChild(imgContainer);
                         });
                     }
-                }
-
-                // Display Report Link
-                const reportLinkDiv = document.getElementById('reportLink');
-                if (processData.report_url) {
-                    const link = document.createElement('a');
-                    link.href = `${API_BASE_URL}${processData.report_url}`;
-                    link.textContent = 'Download Full Report (PDF)';
-                    link.target = '_blank'; // Open in new tab
-                    reportLinkDiv.appendChild(link);
                 }
 
             } catch (error) {

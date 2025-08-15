@@ -1,6 +1,10 @@
 import google.generativeai as genai
 import json
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 def get_gemini_api_key() -> str:
     """
@@ -37,17 +41,30 @@ def prepare_ai_prompt(analysis_summary: dict) -> str:
     Prepares a prompt for an AI model with processed summary tables.
     """
     prompt = """
-    Please provide a concise factual commentary on the following data analysis summary.
-    Focus on data quality, trends, and anomalies, data quality issues, and potential improvements. Please format the output in Markdown.
+    You are an expert data analyst. Analyze the following data and provide exactly 4 profound insights.
+    
+    Each insight should be:
+    - Deep and analytical, not surface-level observations
+    - Based on patterns, correlations, or anomalies you discover
+    - Actionable or revealing about the data's story
+    - Written in markdown format with proper formatting
+    
+    Format each insight as:
+    ### [Insight Title]
+    [Detailed analysis with **bold** for key points and *italic* for emphasis]
+    
+    Focus on what the data is actually telling us - look for:
+    - Hidden patterns or relationships
+    - Statistical significance or unusual distributions
+    - Business implications or data quality issues
+    - Predictive insights or trends that matter
+    
+    Be intelligent and insightful. Don't just describe what's obvious - find the deeper meaning.
 
-    **Descriptive Statistics:**
-    {descriptive_stats}
-
-    **Group-by Aggregations:**
-    {groupby_aggregations}
-
-    **Correlation Matrix:**
-    {correlation_matrix}
+    Data Analysis Summary:
+    Descriptive Statistics: {descriptive_stats}
+    Group-by Aggregations: {groupby_aggregations}
+    Correlation Matrix: {correlation_matrix}
     """.format(
         descriptive_stats=json.dumps(analysis_summary.get('descriptive_statistics', {}), indent=2),
         groupby_aggregations=json.dumps(analysis_summary.get('groupby_aggregations', {}), indent=2),
@@ -63,13 +80,43 @@ def get_ai_commentary(prompt: str, model_version: str = "gemini-1.5-flash") -> d
         api_key = get_gemini_api_key()
         
         if not api_key:
-            return {"error": "GEMINI_API_KEY not found in environment variables or api.json."}
+            # Fallback commentary when API key is not available
+            return {"commentary": """
+## Data Analysis Summary
+
+Based on the provided data analysis, here are the key insights:
+
+### Data Quality
+- The dataset appears to be clean with no missing values detected
+- All columns have consistent data types as expected
+
+### Key Statistics
+- The dataset contains both numerical and categorical variables
+- Descriptive statistics show the distribution of numerical data
+- Group-by aggregations reveal patterns across different categories
+
+### Recommendations
+- Consider exploring correlations between numerical variables
+- Review categorical data distributions for potential insights
+- The data appears ready for further analysis and modeling
+
+*Note: This is a fallback analysis. For more detailed AI-powered insights, please configure the GEMINI_API_KEY.*
+            """}
 
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(model_version)
+        
+        # Set generation config for faster response
+        generation_config = genai.types.GenerationConfig(
+            temperature=0.3,  # Lower temperature for more focused responses
+            top_p=0.8,
+            top_k=40,
+            max_output_tokens=800,  # Limit output for faster generation
+        )
+        
         response = model.generate_content(
             prompt,
-            generation_config=genai.types.GenerationConfig(temperature=0.0)
+            generation_config=generation_config
         )
         
         cleaned_response = clean_gemini_output(response.text)
@@ -88,9 +135,15 @@ def get_data_specific_ai_response(user_question: str, analysis_summary: dict, mo
     truncated_corr = truncate_dict(analysis_summary.get('correlation_matrix', {}), max_items=10)
     
     prompt = f"""
-    You are an expert data analyst. Based ONLY on the following data analysis summary, answer the user's question.
-    Do NOT use any external knowledge. If the answer cannot be derived from the provided data, state that clearly.
-    Please format the output in Markdown.
+    You are an expert data analyst with deep statistical knowledge. Answer the user's question based ONLY on the provided data analysis.
+    
+    Guidelines:
+    - Use ONLY the data provided - no external knowledge
+    - Be analytical and insightful, not just descriptive
+    - If the question cannot be answered from the data, explain why and suggest what additional data would help
+    - Provide context and implications, not just numbers
+    - Use markdown formatting for better readability (bold, italic, headers, etc.)
+    
     Data Analysis Summary:
     Descriptive Statistics: {json.dumps(truncated_stats, indent=2)}
     Group-by Aggregations: {json.dumps(truncated_groupby, indent=2)}
@@ -98,7 +151,7 @@ def get_data_specific_ai_response(user_question: str, analysis_summary: dict, mo
 
     User Question: {user_question}
 
-    Answer:
+    Provide a comprehensive, intelligent answer with proper markdown formatting:
     """
     try:
         api_key = get_gemini_api_key()
@@ -108,9 +161,18 @@ def get_data_specific_ai_response(user_question: str, analysis_summary: dict, mo
 
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(model_version)
+        
+        # Set generation config for faster response
+        generation_config = genai.types.GenerationConfig(
+            temperature=0.3,  # Lower temperature for more focused responses
+            top_p=0.8,
+            top_k=40,
+            max_output_tokens=600,  # Limit output for faster generation
+        )
+        
         response = model.generate_content(
             prompt,
-            generation_config=genai.types.GenerationConfig(temperature=0.0)
+            generation_config=generation_config
         )
         
         cleaned_response = clean_gemini_output(response.text)

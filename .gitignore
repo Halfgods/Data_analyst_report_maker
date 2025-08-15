@@ -3,3 +3,9 @@ test_csvs
 uploads
 test_ai_commentary.py
 api.json
+.env
+*.env
+.env.*
+DEPLOYMENT.md
+COMPREHENSIVE_README.md
+start_dev.sh

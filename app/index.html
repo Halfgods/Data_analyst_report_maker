@@ -81,20 +81,24 @@ Processing data...`;
 
                 // Display Charts
                 const chartsContainer = document.getElementById('chartsContainer');
+                chartsContainer.innerHTML = '';
                 if (processData.analysis_results && processData.analysis_results.chart_urls) {
                     for (const chartType in processData.analysis_results.chart_urls) {
                         const chartUrls = processData.analysis_results.chart_urls[chartType];
                         chartUrls.forEach(url => {
-                            const imgContainer = document.createElement('div');
-                            imgContainer.className = 'chart-container';
-                            const imgTitle = document.createElement('h3');
-                            imgTitle.textContent = chartType.replace('_', ' ').toUpperCase();
-                            const img = document.createElement('img');
-                            img.src = `${API_BASE_URL}${url}`;
-                            img.alt = chartType;
-                            imgContainer.appendChild(imgTitle);
-                            imgContainer.appendChild(img);
-                            chartsContainer.appendChild(imgContainer);
+                            const chartDiv = document.createElement('div');
+                            chartDiv.className = 'chart-container';
+                            const chartTitle = document.createElement('h3');
+                            chartTitle.textContent = chartType.replace('_', ' ').toUpperCase();
+                            // Use iframe for interactive HTML charts
+                            const iframe = document.createElement('iframe');
+                            iframe.src = `${API_BASE_URL}${url}`;
+                            iframe.width = "100%";
+                            iframe.height = "600";
+                            iframe.style.border = "none";
+                            chartDiv.appendChild(chartTitle);
+                            chartDiv.appendChild(iframe);
+                            chartsContainer.appendChild(chartDiv);
                         });
                     }
                 }

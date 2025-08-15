@@ -6,6 +6,7 @@ import numpy as np
 from typing import Dict, Any, List, Tuple, Optional
 from scipy.stats import pearsonr
 import warnings
+import plotly.express as px
 warnings.filterwarnings('ignore')
 
 def validate_column_for_histogram(df: pd.DataFrame, column: str) -> Dict[str, Any]:
@@ -133,39 +134,52 @@ def create_clean_histogram(df: pd.DataFrame, column: str, session_folder: str) -
     Creates a clean, publication-ready histogram.
     """
     series = df[column].dropna()
-    
+    # Check for skewness
+    skewness = series.skew()
+    if abs(skewness) > 2:
+        print(f"Skipping mean/median for {column}: highly skewed (skew={skewness:.2f})")
+        show_stats = False
+    else:
+        show_stats = True
+
     plt.figure(figsize=(10, 6))
     plt.style.use('default')
-    
-    # Calculate optimal number of bins
     bins = min(30, max(10, int(np.sqrt(len(series)))))
-    
-    # Create histogram with clean styling
     plt.hist(series, bins=bins, alpha=0.7, color='#1f77b4', edgecolor='white', linewidth=0.5)
-    
-    # Add statistical annotations
-    mean_val = series.mean()
-    median_val = series.median()
-    std_val = series.std()
-    
-    plt.axvline(mean_val, color='red', linestyle='--', linewidth=2, alpha=0.8, label=f'Mean: {mean_val:.2f}')
-    plt.axvline(median_val, color='green', linestyle='--', linewidth=2, alpha=0.8, label=f'Median: {median_val:.2f}')
-    
+
+    if show_stats:
+        mean_val = series.mean()
+        median_val = series.median()
+        plt.axvline(mean_val, color='red', linestyle='--', linewidth=2, alpha=0.8, label=f'Mean: {mean_val:.2f}')
+        plt.axvline(median_val, color='green', linestyle='--', linewidth=2, alpha=0.8, label=f'Median: {median_val:.2f}')
+        plt.legend(fontsize=10)
+
     plt.title(f'Distribution of {column.title()}', fontsize=16, fontweight='bold', pad=20)
     plt.xlabel(column.title(), fontsize=12)
     plt.ylabel('Frequency', fontsize=12)
-    plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
-    
-    # Clean up the plot
     plt.tight_layout()
-    
-    # Save with high quality
     chart_filename = f'{column}_histogram.png'
     chart_path = os.path.join(session_folder, chart_filename)
     plt.savefig(chart_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.close()
-    
+    return chart_path
+
+def create_interactive_histogram(df: pd.DataFrame, column: str, session_folder: str) -> Optional[str]:
+    """
+    Creates an interactive histogram using Plotly.
+    """
+    series = df[column].dropna()
+    fig = px.histogram(
+        series,
+        nbins=min(30, max(10, int(np.sqrt(len(series))))),
+        title=f"Distribution of {column.title()}",
+        labels={column: column.title(), "count": "Frequency"},
+        color_discrete_sequence=["#1f77b4"]
+    )
+    fig.update_layout(template="plotly_white")
+    chart_path = os.path.join(session_folder, f"{column}_histogram.html")
+    fig.write_html(chart_path, include_plotlyjs="cdn")
     return chart_path
 
 def create_clean_barchart(df: pd.DataFrame, column: str, session_folder: str) -> Optional[str]:
@@ -212,6 +226,30 @@ def create_clean_barchart(df: pd.DataFrame, column: str, session_folder: str) ->
     
     return chart_path
 
+def create_interactive_barchart(df: pd.DataFrame, column: str, session_folder: str) -> Optional[str]:
+    """
+    Creates an interactive bar chart using Plotly.
+    """
+    series = df[column].dropna()
+    value_counts = series.value_counts()
+
+    if len(value_counts) > 15:
+        value_counts = value_counts.head(15)
+
+    fig = px.bar(
+        x=value_counts.index,
+        y=value_counts.values,
+        title=f"Distribution of {column.title()}",
+        labels={"x": column.title(), "y": "Count"},
+        color_discrete_sequence=["#1f77b4"]
+    )
+    fig.update_traces(text=value_counts.values, textposition="outside")
+    fig.update_layout(template="plotly_white", xaxis_tickangle=-45)
+    
+    chart_path = os.path.join(session_folder, f"{column}_barchart.html")
+    fig.write_html(chart_path, include_plotlyjs="cdn")
+    return chart_path
+
 def create_clean_scatterplot(df: pd.DataFrame, col1: str, col2: str, session_folder: str) -> Optional[str]:
     """
     Creates a clean, publication-ready scatter plot with correlation info.
@@ -254,9 +292,51 @@ def create_clean_scatterplot(df: pd.DataFrame, col1: str, col2: str, session_fol
     
     return chart_path
 
+def create_interactive_scatterplot(df: pd.DataFrame, col1: str, col2: str, session_folder: str) -> Optional[str]:
+    """
+    Creates an interactive scatter plot using Plotly.
+    """
+    common_data = df[[col1, col2]].dropna()
+    fig = px.scatter(
+        common_data,
+        x=col1,
+        y=col2,
+        title=f"{col1.title()} vs {col2.title()}",
+        labels={col1: col1.title(), col2: col2.title()}
+    )
+    
+    # Add correlation info to the chart title
+    try:
+        corr_coef, p_value = pearsonr(common_data[col1], common_data[col2])
+        fig.update_layout(
+            title=f"{col1.title()} vs {col2.title()}<br><sub>Correlation: r = {corr_coef:.3f}, p = {p_value:.3f}</sub>",
+            template="plotly_white"
+        )
+    except:
+        fig.update_layout(template="plotly_white")
+    
+    chart_path = os.path.join(session_folder, f"{col1}_vs_{col2}_scatterplot.html")
+    fig.write_html(chart_path, include_plotlyjs="cdn")
+    return chart_path
+
+def create_interactive_piechart(df, column, session_folder) -> Optional[str]:
+    series = df[column].dropna()
+    value_counts = series.value_counts()
+    fig = px.pie(names=value_counts.index, values=value_counts.values, title=f"Pie Chart of {column.title()}")
+    chart_path = os.path.join(session_folder, f"{column}_piechart.html")
+    fig.write_html(chart_path, include_plotlyjs="cdn")
+    return chart_path
+
+def create_interactive_boxplot(df, column, session_folder) -> Optional[str]:
+    series = df[column].dropna()
+    fig = px.box(series, title=f"Boxplot of {column.title()}", labels={column: column.title()}, color_discrete_sequence=["#1f77b4"])
+    chart_path = os.path.join(session_folder, f"{column}_boxplot.html")
+    fig.write_html(chart_path, include_plotlyjs="cdn")
+    return chart_path
+
 def generate_smart_charts(df: pd.DataFrame, session_folder: str) -> Dict[str, Any]:
     """
-    Generates only meaningful, clean charts based on data validation.
+    Generates only meaningful, interactive charts based on data validation.
     """
     if not os.path.exists(session_folder):
         os.makedirs(session_folder)
@@ -268,85 +348,56 @@ def generate_smart_charts(df: pd.DataFrame, session_folder: str) -> Dict[str, An
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     
-    print(f"Found {len(numeric_cols)} numeric columns and {len(categorical_cols)} categorical columns")
-    
-    # 1. Validate and create histograms for numeric columns
+    # 1. Validate and create interactive histograms for numeric columns
     valid_histograms = []
     for col in numeric_cols:
         validation = validate_column_for_histogram(df, col)
         validation_log[f"{col}_histogram"] = validation
-        
         if validation["valid"]:
-            print(f"Creating histogram for {col}: {validation['sample_size']} points, {validation['unique_values']} unique values")
-            chart_path = create_clean_histogram(df, col, session_folder)
-            if chart_path:
-                valid_histograms.append(chart_path)
-        else:
-            print(f"Skipping histogram for {col}: {validation['reason']}")
-    
+            chart_path_html = create_interactive_histogram(df, col, session_folder)
+            chart_path_png = create_clean_histogram(df, col, session_folder) # Generate PNG for PDF
+            if chart_path_html:
+                valid_histograms.append(chart_path_html)
     if valid_histograms:
         chart_paths['histograms'] = valid_histograms
-    
-    # 2. Validate and create bar charts for categorical columns
+
+    # 2. Validate and create interactive bar charts for categorical columns
     valid_barcharts = []
     for col in categorical_cols:
         validation = validate_column_for_barchart(df, col)
         validation_log[f"{col}_barchart"] = validation
-        
         if validation["valid"]:
-            print(f"Creating bar chart for {col}: {validation['categories']} categories, {validation['sample_size']} points")
-            chart_path = create_clean_barchart(df, col, session_folder)
-            if chart_path:
-                valid_barcharts.append(chart_path)
-        else:
-            print(f"Skipping bar chart for {col}: {validation['reason']}")
-    
+            chart_path_html = create_interactive_barchart(df, col, session_folder)
+            chart_path_png = create_clean_barchart(df, col, session_folder) # Generate PNG for PDF
+            if chart_path_html:
+                valid_barcharts.append(chart_path_html)
     if valid_barcharts:
         chart_paths['barcharts'] = valid_barcharts
-    
-    # 3. Validate and create scatter plots for numeric column pairs
+
+    # 3. Validate and create interactive scatter plots for numeric column pairs
     valid_scatterplots = []
-    max_scatter_plots = 6  # Limit to most meaningful relationships
     scatter_candidates = []
-    
     for i in range(len(numeric_cols)):
         for j in range(i + 1, len(numeric_cols)):
             col1, col2 = numeric_cols[i], numeric_cols[j]
             validation = validate_columns_for_scatter(df, col1, col2)
             validation_log[f"{col1}_vs_{col2}_scatter"] = validation
-            
             if validation["valid"]:
-                # Score by correlation strength for prioritization
                 scatter_candidates.append((col1, col2, abs(validation["correlation"]), validation))
-    
-    # Sort by correlation strength and take top candidates
+
     scatter_candidates.sort(key=lambda x: x[2], reverse=True)
-    
-    for col1, col2, corr_strength, validation in scatter_candidates[:max_scatter_plots]:
-        print(f"Creating scatter plot for {col1} vs {col2}: r={validation['correlation']:.3f}, {validation['interpretation']} correlation")
-        chart_path = create_clean_scatterplot(df, col1, col2, session_folder)
-        if chart_path:
-            valid_scatterplots.append(chart_path)
-    
+    for col1, col2, _, _ in scatter_candidates[:6]:
+        chart_path_html = create_interactive_scatterplot(df, col1, col2, session_folder)
+        chart_path_png = create_clean_scatterplot(df, col1, col2, session_folder) # Generate PNG for PDF
+        if chart_path_html:
+            valid_scatterplots.append(chart_path_html)
     if valid_scatterplots:
         chart_paths['scatterplots'] = valid_scatterplots
-    
-    # Print summary
-    total_created = len(valid_histograms) + len(valid_barcharts) + len(valid_scatterplots)
-    total_possible = len(numeric_cols) + len(categorical_cols) + (len(numeric_cols) * (len(numeric_cols) - 1) // 2)
-    
-    print(f"\nChart Generation Summary:")
-    print(f"Created {total_created} meaningful charts out of {total_possible} possible charts")
-    print(f"- Histograms: {len(valid_histograms)}/{len(numeric_cols)}")
-    print(f"- Bar Charts: {len(valid_barcharts)}/{len(categorical_cols)}")
-    print(f"- Scatter Plots: {len(valid_scatterplots)}/{len(scatter_candidates)} (limited to top {max_scatter_plots})")
-    
+
     return {
         "chart_paths": chart_paths,
         "validation_log": validation_log,
         "summary": {
-            "total_charts_created": total_created,
-            "total_charts_possible": total_possible,
-            "quality_ratio": total_created / max(1, total_possible)
+            "total_charts_created": len(valid_histograms) + len(valid_barcharts) + len(valid_scatterplots)
         }
     }

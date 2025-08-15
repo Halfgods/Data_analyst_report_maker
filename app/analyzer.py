@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 from typing import Dict, Any
-from app.smart_chart_generator import generate_smart_charts
+from smart_chart_generator import generate_smart_charts
 
 def analyze_dataframe(df: pd.DataFrame, session_folder: str) -> Dict[str, Any]:
     """

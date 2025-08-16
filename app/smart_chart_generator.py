@@ -159,7 +159,11 @@ def create_clean_histogram(df: pd.DataFrame, column: str, session_folder: str) -
     plt.ylabel('Frequency', fontsize=12)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    chart_filename = f'{column}_histogram.png'
+    # Clean column name for filename (remove special characters)
+    safe_column_name = "".join(c for c in column if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_column_name = safe_column_name.replace(' ', '_')
+    
+    chart_filename = f'{safe_column_name}_histogram.png'
     chart_path = os.path.join(session_folder, chart_filename)
     plt.savefig(chart_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.close()
@@ -178,7 +182,12 @@ def create_interactive_histogram(df: pd.DataFrame, column: str, session_folder: 
         color_discrete_sequence=["#1f77b4"]
     )
     fig.update_layout(template="plotly_white")
-    chart_path = os.path.join(session_folder, f"{column}_histogram.html")
+    
+    # Clean column name for filename (remove special characters)
+    safe_column_name = "".join(c for c in column if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_column_name = safe_column_name.replace(' ', '_')
+    
+    chart_path = os.path.join(session_folder, f"{safe_column_name}_histogram.html")
     fig.write_html(chart_path, include_plotlyjs="cdn")
     return chart_path
 
@@ -219,7 +228,11 @@ def create_clean_barchart(df: pd.DataFrame, column: str, session_folder: str) ->
     
     plt.tight_layout()
     
-    chart_filename = f'{column}_barchart.png'
+    # Clean column name for filename (remove special characters)
+    safe_column_name = "".join(c for c in column if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_column_name = safe_column_name.replace(' ', '_')
+    
+    chart_filename = f'{safe_column_name}_barchart.png'
     chart_path = os.path.join(session_folder, chart_filename)
     plt.savefig(chart_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.close()
@@ -246,7 +259,11 @@ def create_interactive_barchart(df: pd.DataFrame, column: str, session_folder: s
     fig.update_traces(text=value_counts.values, textposition="outside")
     fig.update_layout(template="plotly_white", xaxis_tickangle=-45)
     
-    chart_path = os.path.join(session_folder, f"{column}_barchart.html")
+    # Clean column name for filename (remove special characters)
+    safe_column_name = "".join(c for c in column if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_column_name = safe_column_name.replace(' ', '_')
+    
+    chart_path = os.path.join(session_folder, f"{safe_column_name}_barchart.html")
     fig.write_html(chart_path, include_plotlyjs="cdn")
     return chart_path
 
@@ -285,7 +302,11 @@ def create_clean_scatterplot(df: pd.DataFrame, col1: str, col2: str, session_fol
     plt.legend()
     plt.tight_layout()
     
-    chart_filename = f'{col1}_vs_{col2}_scatterplot.png'
+    # Clean column names for filename (remove special characters)
+    safe_col1 = "".join(c for c in col1 if c.isalnum() or c in (' ', '-', '_')).rstrip().replace(' ', '_')
+    safe_col2 = "".join(c for c in col2 if c.isalnum() or c in (' ', '-', '_')).rstrip().replace(' ', '_')
+    
+    chart_filename = f'{safe_col1}_vs_{safe_col2}_scatterplot.png'
     chart_path = os.path.join(session_folder, chart_filename)
     plt.savefig(chart_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.close()
@@ -315,7 +336,11 @@ def create_interactive_scatterplot(df: pd.DataFrame, col1: str, col2: str, sessi
     except:
         fig.update_layout(template="plotly_white")
     
-    chart_path = os.path.join(session_folder, f"{col1}_vs_{col2}_scatterplot.html")
+    # Clean column names for filename (remove special characters)
+    safe_col1 = "".join(c for c in col1 if c.isalnum() or c in (' ', '-', '_')).rstrip().replace(' ', '_')
+    safe_col2 = "".join(c for c in col2 if c.isalnum() or c in (' ', '-', '_')).rstrip().replace(' ', '_')
+    
+    chart_path = os.path.join(session_folder, f"{safe_col1}_vs_{safe_col2}_scatterplot.html")
     fig.write_html(chart_path, include_plotlyjs="cdn")
     return chart_path
 
@@ -323,14 +348,24 @@ def create_interactive_piechart(df, column, session_folder) -> Optional[str]:
     series = df[column].dropna()
     value_counts = series.value_counts()
     fig = px.pie(names=value_counts.index, values=value_counts.values, title=f"Pie Chart of {column.title()}")
-    chart_path = os.path.join(session_folder, f"{column}_piechart.html")
+    
+    # Clean column name for filename (remove special characters)
+    safe_column_name = "".join(c for c in column if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_column_name = safe_column_name.replace(' ', '_')
+    
+    chart_path = os.path.join(session_folder, f"{safe_column_name}_piechart.html")
     fig.write_html(chart_path, include_plotlyjs="cdn")
     return chart_path
 
 def create_interactive_boxplot(df, column, session_folder) -> Optional[str]:
     series = df[column].dropna()
     fig = px.box(series, title=f"Boxplot of {column.title()}", labels={column: column.title()}, color_discrete_sequence=["#1f77b4"])
-    chart_path = os.path.join(session_folder, f"{column}_boxplot.html")
+    
+    # Clean column name for filename (remove special characters)
+    safe_column_name = "".join(c for c in column if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_column_name = safe_column_name.replace(' ', '_')
+    
+    chart_path = os.path.join(session_folder, f"{safe_column_name}_boxplot.html")
     fig.write_html(chart_path, include_plotlyjs="cdn")
     return chart_path
 

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { Dashboard } from '@/pages/Dashboard';
+import { Header } from '@/components/Header';
+import { LoadingAnimation } from '@/components/LoadingAnimation';
 
 // Backend API configuration
 const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -138,12 +140,12 @@ const Index = () => {
 
   if (appState === 'processing') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent animate-spin rounded-full mx-auto" />
-          <h2 className="text-2xl font-bold">Analyzing Your Data</h2>
-          <p className="text-muted-foreground">This may take a few moments...</p>
-        </div>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <LoadingAnimation 
+          message="Analyzing Your Data"
+          subMessage="Our AI is processing your CSV file and generating insights..."
+        />
       </div>
     );
   }
@@ -158,8 +160,9 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="container mx-auto px-4 py-12">
         <FileUpload 
           onFilesSelected={handleFilesSelected}
           isLoading={isLoading}
